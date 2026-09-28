@@ -1,0 +1,52 @@
+name: estim_campus
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.2+3
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.2.1
+  shared_preferences: ^2.2.3
+  share_plus: ^7.2.1  # Mise à jour pour éviter les conflits Gradle
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.10+1
+  flutter_local_notifications: ^17.2.0  # Résout l'erreur bigLargeIcon
+  intl: ^0.20.2
+  url_launcher: ^6.3.1
+  webview_flutter: ^4.4.2  # Version stable
+  permission_handler: ^11.2.0  # Compatible avec Android 14
+  workmanager: ^0.5.1  # Dernière version stable (ou utilise workmanager: ^0.5.1)
+  flutter_markdown: ^0.7.7+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/imgs/logo.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/imgs/
+    - assets/img/
+    - assets/icon/
+  fonts:
+    - family: Helvetica
+      fonts:
+        - asset: assets/font/Helvetica.ttf
+        - asset: assets/font/Helvetica-Bold.ttf
+          weight: 700
+    - family: Quicksand
+      fonts:
+        - asset: assets/font/Quicksand-Bold.ttf
+          weight: 700
