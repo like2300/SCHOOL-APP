@@ -11,6 +11,17 @@ PORT="${PORT:-8100}"
 WORKERS="${GUNICORN_WORKERS:-2}"
 GUNICORN="$APP_DIR/env/bin/gunicorn"
 
+# Verrou : une seule instance à la fois (le superviseur relance parfois
+# start.sh en double -> les deux lieraient le même port en même temps).
+LOCK="$APP_DIR/.start.lock"
+if command -v flock >/dev/null 2>&1; then
+  exec 9>"$LOCK"
+  if ! flock -n 9; then
+    echo "[start] Une autre instance tourne déjà — arrêt propre."
+    exit 0
+  fi
+fi
+
 port_occupe() {
   # vrai (0) si quelque chose répond sur le port = occupé.
   (exec 3<>/dev/tcp/127.0.0.1/"$1") 2>/dev/null && return 0 || return 1
