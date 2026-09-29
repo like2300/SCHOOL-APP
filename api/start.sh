@@ -8,6 +8,8 @@
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$APP_DIR"
 PORT="${PORT:-8100}"
+# Override optionnel : APP_PORT=8200 pour binder un autre port que $PORT.
+BIND_PORT="${APP_PORT:-$PORT}"
 WORKERS="${GUNICORN_WORKERS:-2}"
 GUNICORN="$APP_DIR/env/bin/gunicorn"
 
@@ -87,14 +89,18 @@ if [ ! -x "$GUNICORN" ]; then
   exit 1
 fi
 
-# Important : on garde le $PORT d'AlwaysData (le proxy route vers lui).
-libere_port "$PORT" || exit 1
+# Important : AlwaysData route vers $PORT. Si APP_PORT est différent,
+# le site ne répondra plus via le proxy (log d'avertissement ci-dessous).
+if [ "$BIND_PORT" != "$PORT" ]; then
+  echo "[start] ATTENTION : bind sur $BIND_PORT alors que le proxy vise $PORT — le site risque d'être injoignable."
+fi
+libere_port "$BIND_PORT" || exit 1
 
 delai=2
 while true; do
-  echo "[start] Lancement gunicorn sur 127.0.0.1:$PORT (workers=$WORKERS)..."
+  echo "[start] Lancement gunicorn sur 127.0.0.1:$BIND_PORT (workers=$WORKERS)..."
   "$GUNICORN" estim_campus_api.wsgi:application \
-    --bind "127.0.0.1:$PORT" \
+    --bind "127.0.0.1:$BIND_PORT" \
     --workers "$WORKERS" \
     --timeout 60 \
     --access-logfile - \
@@ -103,5 +109,5 @@ while true; do
   echo "[start] gunicorn arrêté (code $code) — redémarrage dans ${delai}s..."
   sleep "$delai"
   delai=$((delai < 30 ? delai * 2 : 30))
-  libere_port "$PORT" || exit 1
+  libere_port "$BIND_PORT" || exit 1
 done
