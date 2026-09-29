@@ -103,6 +103,7 @@ while true; do
     --bind "127.0.0.1:$BIND_PORT" \
     --workers "$WORKERS" \
     --timeout 60 \
+    --pid "$APP_DIR/.gunicorn.pid" \
     --access-logfile - \
     --error-logfile -
   code=$?
