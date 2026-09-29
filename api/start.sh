@@ -23,18 +23,52 @@ libere_port() {
     if command -v fuser >/dev/null 2>&1; then
       fuser -k "$port/tcp" >/dev/null 2>&1 || true
     else
-      # Repli : tue nos vieux gunicorn du même venv.
-      pkill -f "$APP_DIR/env/bin/gunicorn" 2>/dev/null || true
+      tue_squatteur "$port"
     fi
     essais=$((essais + 1))
     sleep 2
   done
   if port_occupe "$port"; then
     echo "[start] ERREUR : port $port toujours occupé, abandon."
+    echo "[start] Diagnostic : lance 'ss -ltnp | grep $port' + 'ps aux | grep -E \"gunicorn|runserver\"' en SSH."
     return 1
   fi
   echo "[start] Port $port libre."
   return 0
+}
+
+tue_squatteur() {
+  # Trouve le PID qui écoute sur le port (ss ou lsof) et le tue
+  # seulement si c'est un python/gunicorn (jamais un processus système).
+  local port="$1" pids="" pid="" cmd=""
+  if command -v ss >/dev/null 2>&1; then
+    pids=$(ss -ltnp 2>/dev/null | grep ":$port " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | sort -u)
+  elif command -v lsof >/dev/null 2>&1; then
+    pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null)
+  else
+    pkill -f "$APP_DIR/env/bin/gunicorn" 2>/dev/null || true
+    return 0
+  fi
+  if [ -z "$pids" ]; then
+    echo "[start] Aucun PID visible pour le port $port (permissions ?) — repli pkill."
+    pkill -f "$APP_DIR/env/bin/gunicorn" 2>/dev/null || true
+    pkill -f "manage.py runserver" 2>/dev/null || true
+    return 0
+  fi
+  for pid in $pids; do
+    if [ -n "$pid" ] && [ "$pid" != "$$" ]; then
+      cmd=$(ps -o comm= -p "$pid" 2>/dev/null || echo "?")
+      case "$cmd" in
+        python*|gunicorn*)
+          echo "[start] kill PID $pid ($cmd)..."
+          kill "$pid" 2>/dev/null || true
+          sleep 1
+          kill -9 "$pid" 2>/dev/null || true
+          ;;
+        *) echo "[start] PID $pid ($cmd) non python — pas touché." ;;
+      esac
+    fi
+  done
 }
 
 if [ ! -x "$GUNICORN" ]; then
