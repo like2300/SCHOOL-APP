@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Bulletin de paie — {{ bulletin }}</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a2332; margin: 0; padding: 24px; }
+  .page { max-width: 700px; margin: 0 auto; border: 2px solid #1a6b3c; padding: 24px; }
+  .header { text-align: center; border-bottom: 3px double #c8960a; padding-bottom: 12px; margin-bottom: 16px; }
+  .header h1 { color: #1a6b3c; margin: 0; font-size: 20px; }
+  .header p { margin: 2px 0; font-size: 12px; color: #555; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; }
+  td, th { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+  td.label { font-weight: bold; color: #1a6b3c; background: #f6f9f6; }
+  td.montant, th.montant { text-align: right; }
+  tr.total td { font-weight: bold; font-size: 16px; background: #e8f5e9; }
+  .sign { display: flex; justify-content: space-between; margin-top: 48px; font-size: 12px; color: #555; }
+  .no-print { text-align: center; margin-bottom: 16px; }
+  .no-print button { background: #1a6b3c; color: #fff; border: none; padding: 10px 24px; font-size: 14px; border-radius: 6px; cursor: pointer; }
+  @media print { .no-print { display: none; } body { padding: 0; } .page { border: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="no-print"><button onclick="window.print()">Imprimer la fiche de paie</button></div>
+  <div class="header">
+    <h1>BULLETIN DE PAIE — {{ bulletin.mois|stringformat:"02d" }}/{{ bulletin.annee }}</h1>
+    <p>{{ bulletin.employe.last_name }} {{ bulletin.employe.first_name }} — {{ bulletin.employe.fonction }}</p>
+  </div>
+  <table>
+    <tr><th>Désignation</th><th class="montant">Montant (FCFA)</th></tr>
+    <tr><td class="label">Salaire de base</td><td class="montant">{{ bulletin.salaire_base }}</td></tr>
+    <tr><td class="label">Primes</td><td class="montant">+ {{ bulletin.primes }}</td></tr>
+    <tr><td class="label">Retenues</td><td class="montant">- {{ bulletin.retenues }}</td></tr>
+    <tr class="total"><td>NET À PAYER</td><td class="montant">{{ bulletin.net_a_payer }} FCFA</td></tr>
+  </table>
+  <p style="font-size:12px;color:#555">Versé le : {{ bulletin.verse_le|default:"—" }} {% if bulletin.observation %}<br>Observation : {{ bulletin.observation }}{% endif %}</p>
+  <div class="sign">
+    <div>Signature de l'employé<br><br>___________________</div>
+    <div>Signature &amp; cachet de l'administration<br><br>___________________</div>
+  </div>
+</div>
+</body>
+</html>

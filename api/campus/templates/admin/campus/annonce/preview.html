@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+{% if annonces %}
+<div class="bg-white border border-base-200 rounded-default shadow-xs p-6 w-full mb-6 dark:bg-base-900 dark:border-base-800">
+    <div class="flex flex-row items-center gap-3 mb-4">
+        <h2 class="font-semibold text-font-important-light text-lg dark:text-font-important-dark">
+            À la une
+        </h2>
+        <span id="slide-counter" class="text-xs text-font-subtle-light dark:text-font-subtle-dark"></span>
+        <span class="ml-auto flex flex-row gap-2">
+            <button id="slide-prev" class="border border-base-200 bg-white rounded-default w-9 h-9 inline-flex items-center justify-center hover:text-primary-600 dark:border-base-700 dark:bg-transparent">
+                <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button id="slide-next" class="border border-base-200 bg-white rounded-default w-9 h-9 inline-flex items-center justify-center hover:text-primary-600 dark:border-base-700 dark:bg-transparent">
+                <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+        </span>
+    </div>
+
+    <div id="slides" class="relative overflow-hidden rounded-default">
+        {% for a in annonces %}
+        <div class="slide hidden" data-index="{{ forloop.counter0 }}">
+            <div class="relative">
+                {% if a.image %}
+                <img src="{{ a.image }}" alt="{{ a.title }}" class="w-full object-cover" style="max-height:420px">
+                {% else %}
+                <div class="w-full flex items-center justify-center bg-base-100 dark:bg-base-800" style="height:280px">
+                    <span class="material-symbols-outlined text-6xl text-base-300 dark:text-base-600">campaign</span>
+                </div>
+                {% endif %}
+                <span class="absolute top-3 left-3 text-xs font-semibold px-3 py-1 rounded-full text-white" style="background:rgba(0,0,0,.55)">{{ a.type }}</span>
+            </div>
+            <div class="p-5">
+                <h3 class="font-bold text-font-important-light text-xl dark:text-font-important-dark">{{ a.title }}</h3>
+                <p class="text-xs text-font-subtle-light mt-1 mb-2 dark:text-font-subtle-dark">{{ a.date|date:"d/m/Y H:i" }}</p>
+                <p class="text-sm text-font-default-light dark:text-font-default-dark">{{ a.description|truncatewords:40 }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="slide-dots" class="flex flex-row justify-center gap-2 mt-4">
+        {% for a in annonces %}
+        <button data-index="{{ forloop.counter0 }}" class="dot w-2.5 h-2.5 rounded-full bg-base-300 dark:bg-base-700" title="{{ a.title }}"></button>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="bg-white border border-base-200 rounded-default shadow-xs p-6 w-full dark:bg-base-900 dark:border-base-800">
+    <h2 class="font-semibold text-font-important-light text-lg mb-4 dark:text-font-important-dark">
+        Toutes les annonces ({{ annonces|length }})
+    </h2>
+    <div class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+        {% for a in annonces %}
+        <div class="thumb border border-base-200 rounded-default overflow-hidden cursor-pointer hover:border-primary-600 transition-colors dark:border-base-700" data-index="{{ forloop.counter0 }}">
+            {% if a.image %}
+            <img src="{{ a.image }}" alt="{{ a.title }}" class="w-full object-cover" style="height:140px">
+            {% else %}
+            <div class="w-full flex items-center justify-center bg-base-100 dark:bg-base-800" style="height:140px">
+                <span class="material-symbols-outlined text-4xl text-base-300 dark:text-base-600">campaign</span>
+            </div>
+            {% endif %}
+            <div class="p-3">
+                <p class="text-xs font-semibold text-primary-600 dark:text-primary-500">{{ a.type }}</p>
+                <p class="font-semibold text-sm text-font-important-light truncate dark:text-font-important-dark">{{ a.title }}</p>
+                <p class="text-xs text-font-subtle-light dark:text-font-subtle-dark">{{ a.date|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="bg-white border border-base-200 rounded-default shadow-xs p-6 dark:bg-base-900 dark:border-base-800">
+    <p class="text-sm text-font-subtle-light dark:text-font-subtle-dark">Aucune annonce pour le moment.</p>
+</div>
+{% endif %}
+
+<script>
+(function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('#slides .slide'));
+    var dots = Array.prototype.slice.call(document.querySelectorAll('#slide-dots .dot'));
+    var counter = document.getElementById('slide-counter');
+    if (!slides.length) return;
+    var i = 0, timer = null;
+    function show(n) {
+        i = (n + slides.length) % slides.length;
+        slides.forEach(function (s, k) { s.classList.toggle('hidden', k !== i); });
+        dots.forEach(function (d, k) {
+            d.classList.toggle('bg-primary-600', k === i);
+            d.classList.toggle('bg-base-300', k !== i);
+        });
+        counter.textContent = (i + 1) + ' / ' + slides.length;
+    }
+    function auto() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(function () { show(i + 1); }, 6000);
+    }
+    document.getElementById('slide-prev').addEventListener('click', function () { show(i - 1); auto(); });
+    document.getElementById('slide-next').addEventListener('click', function () { show(i + 1); auto(); });
+    dots.forEach(function (d) {
+        d.addEventListener('click', function () { show(parseInt(d.dataset.index, 10)); auto(); });
+    });
+    document.querySelectorAll('.thumb').forEach(function (t) {
+        t.addEventListener('click', function () {
+            show(parseInt(t.dataset.index, 10)); auto();
+            document.getElementById('slides').scrollIntoView({behavior: 'smooth', block: 'center'});
+        });
+    });
+    show(0); auto();
+})();
+</script>
+{% endblock %}

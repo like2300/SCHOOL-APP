@@ -1,0 +1,233 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:campus_cours_changelist' %}">Cours</a>
+    &rsaquo; Vue calendrier
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<style>
+  #calendar .fc-col-header-cell { background: #f8fafc; }
+  #calendar .fc-col-header-cell-cushion { font-weight: 700; font-size: 13px; color: #0f172a; text-transform: capitalize; }
+  #calendar .fc-day-today .fc-col-header-cell-cushion { color: #fff; background: #1a6b3c; border-radius: 999px; padding: 2px 10px; }
+  #calendar .fc-day-today { background: rgba(26, 107, 60, .05) !important; }
+  #calendar .fc-timegrid-slot { height: 28px; }
+  #calendar .fc-timegrid-slot-label-cushion { font-size: 11px; color: #64748b; }
+  #calendar .fc-event { border-radius: 8px; border: none; box-shadow: 0 1px 3px rgba(0,0,0,.18); cursor: grab; }
+  #calendar .fc-event:hover { box-shadow: 0 3px 8px rgba(0,0,0,.28); }
+  #calendar .fc-event:active { cursor: grabbing; }
+  #calendar .fc-now-indicator-line { border-color: #dc2626; border-width: 2px; }
+  #calendar .fc-toolbar-title { font-size: 18px; font-weight: 700; text-transform: capitalize; }
+  #cal-legend .lg-dot { display: inline-block; width: 12px; height: 12px; border-radius: 999px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white border border-base-200 rounded-default shadow-xs p-6 w-full dark:bg-base-900 dark:border-base-800">
+    <div class="flex flex-row flex-wrap items-center gap-3 mb-4">
+        <h2 class="font-semibold text-font-important-light text-lg dark:text-font-important-dark">
+            Emploi du temps — semaine type
+        </h2>
+        <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark">
+            {% if annee %}Année {{ annee.nom }} : {{ debut|date:"d/m/Y" }} → {{ fin|date:"d/m/Y" }} •{% endif %}
+            Chaque cours se répète sur ses jours (ex : tous les lundis) • Clique sur un cours pour le détail
+        </span>
+        <a href="{% url 'admin:campus_cours_changelist' %}"
+           class="ml-auto flex h-9 items-center gap-2 rounded-default border border-base-200 px-4 text-sm font-medium hover:bg-base-50 dark:border-base-700">
+            <span class="material-symbols-outlined !text-lg">arrow_back</span>
+            Retour à la liste
+        </a>
+    </div>
+
+    {% if not dans_periode %}
+    <div class="mb-4 rounded-default border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-300">
+        Année académique terminée : semaine type affichée sans borne.
+        Active une année en cours dans <a class="font-semibold underline" href="{% url 'admin:campus_anneeacademique_changelist' %}">Années académiques</a>.
+    </div>
+    {% elif not annee %}
+    <div class="mb-4 rounded-default border border-base-200 bg-base-50 px-4 py-3 text-sm text-font-subtle-light dark:border-base-800 dark:bg-base-800/50 dark:text-font-subtle-dark">
+        Aucune année académique définie : les cours se répètent sans borne.
+        Pour borner le calendrier, <a class="font-semibold underline" href="{% url 'admin:campus_anneeacademique_changelist' %}">crée une année académique</a>.
+    </div>
+    {% endif %}
+
+    <form id="cal-filters" class="flex flex-row flex-wrap items-end gap-3 mb-4">
+        <div>
+            <label class="block font-semibold mb-1 text-xs">Établissement</label>
+            <select id="f-etab" class="border border-base-200 bg-white rounded-default text-sm px-3 py-2 dark:bg-base-900 dark:border-base-700">
+                <option value="">Tous</option>
+                {% for e in etablissements %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block font-semibold mb-1 text-xs">Niveau</label>
+            <select id="f-niv" class="border border-base-200 bg-white rounded-default text-sm px-3 py-2 dark:bg-base-900 dark:border-base-700">
+                <option value="">Tous</option>
+                {% for n in niveaux %}<option value="{{ n.id }}">{{ n.nom }}</option>{% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block font-semibold mb-1 text-xs">Filière</label>
+            <select id="f-fil" class="border border-base-200 bg-white rounded-default text-sm px-3 py-2 dark:bg-base-900 dark:border-base-700">
+                <option value="">Toutes</option>
+                {% for f in filieres %}<option value="{{ f.id }}">{{ f.nom }}</option>{% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <div id="calendar"></div>
+    <div id="cal-legend" class="mt-3 flex flex-row flex-wrap gap-x-4 gap-y-1 text-xs text-font-subtle-light dark:text-font-subtle-dark"></div>
+    {% csrf_token %}
+</div>
+
+<div id="cours-modal" class="hidden fixed inset-0 z-[1000] items-center justify-center p-4" style="background:rgba(0,0,0,.4)">
+    <div class="bg-white border border-base-200 rounded-default shadow-lg p-6 w-full max-w-md dark:bg-base-900 dark:border-base-800">
+        <h3 id="cm-title" class="font-semibold text-base mb-3"></h3>
+        <dl id="cm-body" class="flex flex-col gap-2 text-sm"></dl>
+        <div class="flex flex-row gap-2 mt-5">
+            <a id="cm-edit" href="#" class="border font-medium px-3 py-2 rounded-default bg-primary-600 border-transparent text-white hover:bg-primary-600/80 inline-flex items-center gap-1 text-sm">
+                <span class="material-symbols-outlined -ml-0.5">edit</span>
+                Modifier
+            </a>
+            <button id="cm-close" class="border border-base-200 font-medium px-3 py-2 rounded-default text-sm">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var PALETTE = ['#1a6b3c', '#2563eb', '#7c3aed', '#0d9488', '#ea580c', '#db2777', '#ca8a04', '#0e7490', '#4d7c0f', '#111827'];
+    function hash(s) { var h = 0; s = s || ''; for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; } return h; }
+    function colorFor(p) { return PALETTE[hash(p.filiere || p.prof) % PALETTE.length]; }  // 1 couleur par filière
+    function csrf() { var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; }
+    function weekday14(date) { return ((date.getDay() + 6) % 7) + 1; }  // JS 0=Dim → 1=Lun … 7=Dim
+    function hhmm(date) { return ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2); }
+
+    function url() {
+        var q = [];
+        var e = document.getElementById('f-etab').value;
+        var n = document.getElementById('f-niv').value;
+        var f = document.getElementById('f-fil').value;
+        if (e) q.push('etablissement=' + e);
+        if (n) q.push('niveau=' + n);
+        if (f) q.push('filiere=' + f);
+        return '/admin/campus/cours/calendrier-json/' + (q.length ? '?' + q.join('&') : '');
+    }
+
+    var modal = document.getElementById('cours-modal');
+    function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    document.getElementById('cm-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+    var calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        locale: 'fr',
+        firstDay: 1,
+        height: 'auto',
+        initialView: 'timeGridWeek',
+        headerToolbar: {left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay'},
+        buttonText: {today: "Aujourd'hui", month: 'Mois', week: 'Semaine', day: 'Jour'},
+        allDaySlot: false,
+        slotMinTime: '07:00:00',
+        slotMaxTime: '20:00:00',
+        slotDuration: '00:30:00',
+        slotLabelFormat: {hour: '2-digit', minute: '2-digit', hour12: false},
+        dayHeaderFormat: {weekday: 'long', day: 'numeric', month: 'numeric'},
+        nowIndicator: true,
+        weekends: true,
+        editable: true,       // drag & drop activé
+        eventDurationEditable: true,
+        eventMinHeight: 44,
+        slotEventOverlap: false,
+        dayMaxEvents: 4,
+        eventContent: function (arg) {
+            var p = arg.event.extendedProps || {};
+            var time = arg.timeText ? '<div style="font-size:10px;font-weight:700;opacity:.9">' + escapeHtml(arg.timeText) + '</div>' : '';
+            var wrap = document.createElement('div');
+            wrap.style.overflow = 'hidden';
+            wrap.style.padding = '2px 4px';
+            wrap.innerHTML = time +
+                '<div style="font-weight:700;font-size:12px;line-height:1.25">' + escapeHtml(arg.event.title.split(' — ')[0]) + '</div>' +
+                '<div style="font-size:11px;opacity:.92">Salle ' + escapeHtml(p.salle || '—') + '</div>' +
+                '<div style="font-size:11px;opacity:.85">' + escapeHtml(p.prof || '') + '</div>' +
+                '<div style="font-size:10px;opacity:.75">' + escapeHtml(p.niveau || '') + '</div>';
+            return {domNodes: [wrap]};
+        },
+        events: function (info, success, failure) {
+            fetch(url() + (url().includes('?') ? '&' : '?') + 'start=' + info.startStr.slice(0, 10) + '&end=' + info.endStr.slice(0, 10)).then(function (r) { return r.json(); }).then(function (list) {
+                success((list || []).map(function (c) {
+                    var col = colorFor(c.extendedProps || {});
+                    return {
+                        id: c.id, title: c.title,
+                        daysOfWeek: c.daysOfWeek, startTime: c.startTime, endTime: c.endTime, duration: c.duration,
+                        allDay: !c.startTime,
+                        backgroundColor: col, borderColor: col,
+                        extendedProps: c.extendedProps || {}
+                    };
+                }));
+            }).catch(failure);
+        },
+        eventDrop: function (info) { move(info, 'déplacé'); },
+        eventResize: function (info) { move(info, 'redimensionné', true); },
+        eventsSet: function (events) {
+            // Légende : 1 pastille par filière présente dans la semaine
+            var seen = {}, box = document.getElementById('cal-legend');
+            box.innerHTML = '';
+            events.forEach(function (e) {
+                var f = (e.extendedProps && e.extendedProps.filiere) || 'Autres';
+                if (!seen[f]) { seen[f] = e.backgroundColor; }
+            });
+            Object.keys(seen).sort().forEach(function (f) {
+                var s = document.createElement('span');
+                s.className = 'inline-flex items-center gap-1';
+                s.innerHTML = '<span class="lg-dot" style="background:' + seen[f] + '"></span>' + escapeHtml(f);
+                box.appendChild(s);
+            });
+        },
+        eventClick: function (info) {
+            var p = info.event.extendedProps || {};
+            document.getElementById('cm-title').textContent = info.event.title;
+            document.getElementById('cm-body').innerHTML =
+                row('Jours', p.jours) + row('Heure', p.heure) +
+                row('Enseignant', p.prof) + row('Salle', p.salle) +
+                row('Filière', p.filiere) + row('Niveau', p.niveau);
+            document.getElementById('cm-edit').href = '../' + info.event.id + '/change/';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    });
+    function row(k, v) {
+        return '<div class="flex gap-2"><dt class="w-24 shrink-0 font-semibold">' + k + '</dt><dd>' + (v || '—') + '</dd></div>';
+    }
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+        });
+    }
+    function move(info, what, resizeOnly) {
+        var e = info.event;
+        var oldStart = info.oldEvent && info.oldEvent.start ? new Date(info.oldEvent.start) : null;
+        var newStart = e.start ? new Date(e.start) : null;
+        var newEnd = e.end ? new Date(e.end) : null;
+        if (!newStart) { info.revert(); return; }
+        var form = new FormData();
+        form.append('id', e.id);
+        form.append('jour_origine', oldStart && !resizeOnly ? weekday14(oldStart) : weekday14(newStart));
+        form.append('jour_nouveau', weekday14(newStart));
+        form.append('heure', hhmm(newStart));
+        if (newEnd && resizeOnly) { form.append('heure_fin', hhmm(newEnd)); }
+        fetch('/admin/campus/cours/calendrier-deplacer/', {method: 'POST', headers: {'X-CSRFToken': csrf()}, body: form})
+            .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+            .then(function () { calendar.refetchEvents(); })
+            .catch(function () { info.revert(); alert('Cours non ' + what + ' (erreur serveur).'); });
+    }
+    calendar.render();
+    document.getElementById('cal-filters').addEventListener('change', function () { calendar.refetchEvents(); });
+})();
+</script>
+{% endblock %}

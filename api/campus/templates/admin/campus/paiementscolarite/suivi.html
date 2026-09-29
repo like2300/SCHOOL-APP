@@ -1,0 +1,52 @@
+{% extends "admin/base_site.html" %}
+{% load i18n unfold %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:campus_paiementscolarite_changelist' %}">Paiements scolarité</a>
+    &rsaquo; Suivi des dettes
+</div>
+{% endblock %}
+
+{% block content %}
+{% component "unfold/components/container.html" %}
+    <div class="flex flex-col gap-4">
+        {% component "unfold/components/navigation.html" with items=statut_nav %}{% endcomponent %}
+    </div>
+
+    <div class="flex flex-col gap-4 mt-4">
+        {% component "unfold/components/card.html" with title="Suivi des dettes" %}
+            {% if annee %}
+                {% component "unfold/components/text.html" %}
+                    Année {{ annee.nom }}{% if debut and fin %} — du {{ debut|date:"d/m/Y" }} au {{ fin|date:"d/m/Y" }}{% endif %} · inscriptions validées uniquement.
+                {% endcomponent %}
+            {% endif %}
+
+            <form method="get" class="flex flex-wrap items-end gap-3 mt-4">
+                <div>{{ filter_form.annee.label_tag }} {{ filter_form.annee }}</div>
+                <div>{{ filter_form.statut.label_tag }} {{ filter_form.statut }}</div>
+                <div class="grow">{{ filter_form.q.label_tag }} {{ filter_form.q }}</div>
+                {% component "unfold/components/button.html" with submit=1 %}Filtrer{% endcomponent %}
+            </form>
+        {% endcomponent %}
+
+        <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+            {% for card in suivi_cards %}
+                {% component "unfold/components/card.html" %}
+                    {% component "unfold/components/text.html" %}{{ card.title }}{% endcomponent %}
+                    {% component "unfold/components/title.html" %}{{ card.metric }}{% endcomponent %}
+                {% endcomponent %}
+            {% endfor %}
+        </div>
+
+        {% component "unfold/components/card.html" with title="Taux de recouvrement" %}
+            {% component "unfold/components/progress.html" with value=suivi_taux title="" description="" %}{% endcomponent %}
+        {% endcomponent %}
+
+        {% component "unfold/components/card.html" with title="Détail par étudiant" %}
+            {% component "unfold/components/table.html" with table=suivi_table card_included=1 striped=1 %}{% endcomponent %}
+        {% endcomponent %}
+    </div>
+{% endcomponent %}
+{% endblock %}

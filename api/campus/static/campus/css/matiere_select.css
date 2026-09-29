@@ -1,0 +1,11 @@
+/* Champ Matière (fiche examen) : sans bordure par défaut. */
+select#id_matiere {
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+}
+select#id_matiere:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}

@@ -1,0 +1,231 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static campus_stats %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+    @keyframes growUp { from { height: 0; } }
+    .bar-animate { animation: growUp 1s ease-out forwards; }
+</style>
+{% endblock %}
+
+{% block content %}
+{# Données via UNFOLD["DASHBOARD_CALLBACK"] (campus.dashboard), repli sur les tags si absent. #}
+{% dashboard_cards as _cards %}
+{% barres_6mois as _barres %}
+{% derniers_paiements 6 as _paiements %}
+{% dernieres_inscriptions 5 as _inscriptions %}
+{% cours_aujourdhui as _cours_jour %}
+{% with cards=dashboard.cards|default:_cards barres=dashboard.barres|default:_barres paiements=dashboard.paiements|default:_paiements inscriptions=dashboard.inscriptions|default:_inscriptions cours_jour=dashboard.cours_jour|default:_cours_jour %}
+
+<div class="mx-auto w-full max-w-6xl space-y-8">
+    <!-- Salutation + actions -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold tracking-tight text-font-important-light dark:text-font-important-dark">Bonjour 👋</h2>
+            <p class="mt-1 text-sm text-font-subtle-light dark:text-font-subtle-dark">{% now "l d F Y" %} — voici l'activité de ton campus.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'admin:campus_paiementscolarite_suivi' %}" class="flex items-center gap-2 rounded-xl border border-base-200 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:bg-base-50 dark:border-base-700 dark:bg-base-900">
+                <iconify-icon icon="solar:download-linear"></iconify-icon>
+                <span>Suivi des dettes</span>
+            </a>
+            <a href="{% url 'admin:campus_paiementscolarite_add' %}" class="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:translate-y-[-1px] hover:bg-primary-700">
+                <iconify-icon icon="solar:add-circle-bold"></iconify-icon>
+                <span>Encaisser</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Cartes indicateurs -->
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div class="group rounded-2xl border border-base-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg dark:border-base-800 dark:bg-base-900">
+            <div class="mb-4 flex items-start justify-between">
+                <div class="rounded-xl bg-green-50 p-3 text-green-700 transition-transform group-hover:scale-110 dark:bg-green-900/20 dark:text-green-300">
+                    <iconify-icon icon="solar:wallet-2-linear" width="24"></iconify-icon>
+                </div>
+            </div>
+            <p class="text-sm font-medium text-font-subtle-light dark:text-font-subtle-dark">Scolarité encaissée</p>
+            <h3 class="mt-1 text-2xl font-bold">{{ cards.encaisse }} <span class="text-sm font-normal text-font-subtle-light">FCFA</span></h3>
+        </div>
+        <div class="group rounded-2xl border border-base-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg dark:border-base-800 dark:bg-base-900">
+            <div class="mb-4 flex items-start justify-between">
+                <div class="rounded-xl bg-purple-50 p-3 text-purple-600 transition-transform group-hover:scale-110 dark:bg-purple-900/20 dark:text-purple-300">
+                    <iconify-icon icon="solar:users-group-rounded-linear" width="24"></iconify-icon>
+                </div>
+                <span class="text-xs text-font-subtle-light">Total : {{ cards.total_ins }}</span>
+            </div>
+            <p class="text-sm font-medium text-font-subtle-light dark:text-font-subtle-dark">Inscriptions validées</p>
+            <div class="flex items-baseline gap-2">
+                <h3 class="mt-1 text-2xl font-bold">{{ cards.validees }}</h3>
+                <span class="text-xs font-medium text-green-600">{{ cards.taux_validation }}%</span>
+            </div>
+        </div>
+        <div class="group rounded-2xl border border-base-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg dark:border-base-800 dark:bg-base-900">
+            <div class="mb-4 flex items-start justify-between">
+                <div class="rounded-xl bg-orange-50 p-3 text-orange-600 transition-transform group-hover:scale-110 dark:bg-orange-900/20 dark:text-orange-300">
+                    <iconify-icon icon="solar:bill-list-linear" width="24"></iconify-icon>
+                </div>
+                <a href="{% url 'admin:inscription_inscription_changelist' %}?statut__exact=EN_ATTENTE" class="rounded-full bg-orange-50 px-2 py-1 text-xs font-semibold text-orange-600 hover:underline">Traiter →</a>
+            </div>
+            <p class="text-sm font-medium text-font-subtle-light dark:text-font-subtle-dark">En attente de validation</p>
+            <h3 class="mt-1 text-2xl font-bold">{{ cards.attente }} <span class="text-sm font-normal text-font-subtle-light">dossiers</span></h3>
+        </div>
+        <div class="group rounded-2xl border border-base-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg dark:border-base-800 dark:bg-base-900">
+            <div class="mb-4 flex items-start justify-between">
+                <div class="rounded-xl bg-blue-50 p-3 text-blue-600 transition-transform group-hover:scale-110 dark:bg-blue-900/20 dark:text-blue-300">
+                    <iconify-icon icon="solar:users-group-two-rounded-linear" width="24"></iconify-icon>
+                </div>
+            </div>
+            <p class="text-sm font-medium text-font-subtle-light dark:text-font-subtle-dark">Employés actifs</p>
+            <h3 class="mt-1 text-2xl font-bold">{{ cards.employes }}</h3>
+        </div>
+    </div>
+
+    <!-- Graphique + tableaux -->
+    <div class="grid grid-cols-1 gap-6 md:gap-8 xl:grid-cols-3">
+        <div class="space-y-6 xl:col-span-2">
+            <!-- Barres CSS 6 mois -->
+            <div class="rounded-2xl border border-base-200 bg-white p-6 shadow-sm dark:border-base-800 dark:bg-base-900">
+                <div class="mb-6 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold">Encaissements</h3>
+                        <p class="text-xs text-font-subtle-light dark:text-font-subtle-dark">6 derniers mois (FCFA)</p>
+                    </div>
+                    <a href="{% url 'admin:campus_paiementscolarite_changelist' %}" class="text-sm font-medium text-primary-600 hover:underline">Tout voir</a>
+                </div>
+                <div class="relative flex h-64 w-full items-end justify-between gap-2 border-b border-dashed border-base-200 pt-4 sm:gap-4 dark:border-base-800">
+                    <div class="ml-2 flex h-full w-full items-end justify-around">
+                        {% for b in barres %}
+                        <div class="group relative flex w-full flex-col items-center gap-2">
+                            <div class="bar-animate relative w-full max-w-[40px] rounded-t-sm transition-all {% if forloop.last %}bg-gradient-to-t from-primary-600 to-primary-400{% else %}bg-primary-600/20 group-hover:bg-primary-600/40{% endif %}" style="height:{{ b.pct }}%">
+                                <div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-base-900 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">{{ b.montant }} FCFA</div>
+                            </div>
+                            <span class="text-[10px] font-medium {% if forloop.last %}font-bold text-primary-600{% else %}text-font-subtle-light{% endif %}">{{ b.label }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Derniers paiements -->
+            <div class="overflow-hidden rounded-2xl border border-base-200 bg-white shadow-sm dark:border-base-800 dark:bg-base-900">
+                <div class="flex items-center justify-between border-b border-base-100 p-6 dark:border-base-800">
+                    <h3 class="text-lg font-semibold">Derniers paiements</h3>
+                    <a href="{% url 'admin:campus_paiementscolarite_changelist' %}" class="text-sm font-medium text-primary-600 hover:underline">Voir tout</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-left">
+                        <thead class="bg-base-50 text-xs font-semibold uppercase tracking-wider text-font-subtle-light dark:bg-base-800 dark:text-font-subtle-dark">
+                            <tr>
+                                <th class="px-6 py-4">Élève</th>
+                                <th class="px-6 py-4">Motif</th>
+                                <th class="px-6 py-4">Montant</th>
+                                <th class="px-6 py-4">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-base-100 text-sm dark:divide-base-800">
+                            {% for p in paiements %}
+                            <tr class="transition-colors hover:bg-base-50 dark:hover:bg-base-800/50">
+                                <td class="px-6 py-4">
+                                    <p class="font-medium">{{ p.nom_etudiant }}</p>
+                                    <p class="text-xs text-font-subtle-light">{{ p.matricule }}</p>
+                                </td>
+                                <td class="px-6 py-4">{{ p.motif }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 font-semibold">{{ p.montant }} FCFA</td>
+                                <td class="px-6 py-4 text-font-subtle-light">{{ p.created_at|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="px-6 py-6 text-center text-font-subtle-light">Aucun paiement pour le moment.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Cours du jour -->
+            <div class="rounded-2xl border border-base-200 bg-white p-6 shadow-sm dark:border-base-800 dark:bg-base-900">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold">Cours du jour</h3>
+                    <a href="{% url 'admin:campus_cours_calendrier' %}" class="text-sm font-medium text-primary-600 hover:underline">Calendrier</a>
+                </div>
+                <div class="relative space-y-5 pl-4 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[2px] before:bg-base-100 dark:before:bg-base-800">
+                    {% for c in cours_jour %}
+                    <div class="relative">
+                        <div class="absolute -left-[21px] top-1 h-3 w-3 rounded-full border-2 border-white bg-primary-600 shadow-sm"></div>
+                        <p class="mb-0.5 text-xs font-medium text-font-subtle-light">{{ c.heure }}</p>
+                        <p class="text-sm font-semibold">{{ c.matiere }}</p>
+                        <p class="mt-1 text-xs text-font-subtle-light">Salle {{ c.salle }} · {{ c.filiere }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-font-subtle-light">Aucun cours aujourd'hui.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Derniers inscrits -->
+            <div class="rounded-2xl border border-base-200 bg-white p-6 shadow-sm dark:border-base-800 dark:bg-base-900">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold">Derniers inscrits</h3>
+                    <a href="{% url 'admin:inscription_inscription_changelist' %}" class="text-sm font-medium text-primary-600 hover:underline">Tout voir</a>
+                </div>
+                <div class="space-y-3">
+                    {% for i in inscriptions %}
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-600/10 text-xs font-bold text-primary-600">{{ i.last_name|slice:":1" }}{{ i.first_name|slice:":1" }}</div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-medium">{{ i.last_name }} {{ i.first_name }}</p>
+                            <p class="truncate text-xs text-font-subtle-light">{{ i.choix_filiere }}</p>
+                        </div>
+                        {% if i.statut == "VALIDEE" %}
+                        <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Validée</span>
+                        {% elif i.statut == "REJETEE" %}
+                        <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>Rejetée</span>
+                        {% else %}
+                        <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-600"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>Attente</span>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-font-subtle-light">Aucune inscription pour le moment.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des applications (affichage d'origine, inchangé) -->
+    {% if app_list %}
+        {% for app in app_list %}
+        <div class="app-{{ app.app_label }} module">
+            <div class="bg-base-50 mb-6 rounded-default p-3 dark:bg-base-800">
+                <table class="border border-base-400/10 border-spacing-none border-separate rounded-default overflow-hidden shadow-xs w-full dark:border-base-800">
+                    <caption class="font-semibold mb-3 text-base-900 text-left dark:text-base-100">
+                        <a href="{{ app.app_url }}" class="section">{{ app.name }}</a>
+                    </caption>
+                    {% for model in app.models %}
+                    <tr class="bg-white dark:bg-base-900">
+                        <th scope="row" class="font-normal p-3 text-left {% if not forloop.last %}border-b border-base-100 dark:border-base-800{% endif %}">
+                            <a href="{{ model.admin_url }}">{{ model.name }}</a>
+                        </th>
+                        <td class="{% if not forloop.last %}border-b border-base-100 dark:border-base-800{% endif %} p-3 text-right">
+                            <div class="flex flex-row items-center ml-auto gap-4 justify-end">
+                                {% if model.add_url %}
+                                <a href="{{ model.add_url }}" class="addlink block leading-none text-base-400 transition-colors dark:text-base-500" title="Ajouter">
+                                    <span class="material-symbols-outlined">add</span>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endwith %}
+{% endblock %}

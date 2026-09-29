@@ -1,0 +1,208 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if original %}
+    <li>
+        <a href="{% url 'admin:campus_paiement_ticket' original.pk %}" target="_blank" class="bg-primary-600 flex h-9 items-center justify-center rounded-default px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-all duration-200 gap-2">
+            <span class="material-symbols-outlined !text-lg">receipt</span>
+            <span>Imprimer le ticket</span>
+        </a>
+    </li>
+    {% endif %}
+{% endblock %}
+
+{% block form_top %}
+<div class="bg-white border border-base-200 rounded-default shadow-xs p-5 mb-6 dark:bg-base-900 dark:border-base-800">
+    <label for="student-search" class="block font-semibold mb-2 text-font-important-light text-sm dark:text-font-important-dark">
+        Rechercher un étudiant — inscriptions validées uniquement (pré-remplit matricule, nom et n° tuteur)
+    </label>
+    <div class="relative max-w-2xl">
+        <div class="flex flex-row items-center border border-base-200 bg-white rounded-default shadow-xs px-3 dark:bg-base-900 dark:border-base-700">
+            <span class="material-symbols-outlined text-base-400">search</span>
+            <input type="text" id="student-search" autocomplete="off" placeholder="Nom, matricule ou téléphone (2 lettres min)..."
+                   class="grow font-medium min-w-0 p-2 focus:outline-hidden dark:bg-base-900 dark:text-font-default-dark">
+        </div>
+        <div id="student-results" class="hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-base-200 rounded-default shadow-lg overflow-hidden dark:bg-base-900 dark:border-base-700"></div>
+    </div>
+</div>
+<script>
+(function () {
+    var input = document.getElementById('student-search');
+    var box = document.getElementById('student-results');
+    if (!input || !box) return;
+    var t = null;
+    input.addEventListener('input', function () {
+        clearTimeout(t);
+        var q = input.value.trim();
+        if (q.length < 2) { box.classList.add('hidden'); return; }
+        t = setTimeout(function () {
+            fetch('/admin/campus/paiementscolarite/rechercher-etudiant/?q=' + encodeURIComponent(q))
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    box.innerHTML = '';
+                    var list = d.results || [];
+                    if (!list.length) {
+                        box.innerHTML = '<div class="px-3 py-2 text-sm text-font-subtle-light">Aucun étudiant trouvé.</div>';
+                    }
+                    list.forEach(function (s) {
+                        var b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'w-full text-left px-3 py-2 hover:bg-base-100 dark:hover:bg-base-800 border-b border-base-100 dark:border-base-800 last:border-b-0';
+                        b.innerHTML = '<div class="text-sm font-semibold">' + s.label + '</div>'
+                            + '<div class="text-xs text-font-subtle-light">' + s.source + (s.phone ? ' • ' + s.phone : '') + '</div>';
+                        b.addEventListener('click', function () {
+                            document.getElementById('id_matricule').value = s.matricule;
+                            document.getElementById('id_nom_etudiant').value = s.nom;
+                            var ph = document.getElementById('id_phone_tuteur');
+                            if (ph && s.phone) ph.value = s.phone;
+                            setSelect('id_niveau', s.niveau_id, s.niveau_nom);
+                            setSelect('id_filiere', s.filiere_id, s.filiere_nom);
+                            // Récupère le montant du tarif lié à la filière (+ niveau) de l'inscription
+                            fillMontant(s.filiere_id, s.niveau_id);
+                            // Nouveau paiement : propose le 1er mois non encore payé (même motif)
+                            pickUnpaidMonth(s.mois_payes || {});
+                            input.value = s.label;
+                            box.classList.add('hidden');
+                        });
+                        box.appendChild(b);
+                    });
+                    box.classList.remove('hidden');
+                });
+        }, 300);
+    });
+    document.addEventListener('click', function (e) {
+        if (!box.contains(e.target) && e.target !== input) box.classList.add('hidden');
+    });
+    function setSelect(id, val, label) {
+        if (!val) return;
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        if (!sel.querySelector('option[value="' + val + '"]')) {
+            var opt = document.createElement('option');
+            opt.value = val; opt.textContent = label || val; opt.selected = true;
+            sel.appendChild(opt);
+        }
+        sel.value = val;
+        if (window.django && django.jQuery) { django.jQuery(sel).trigger('change'); }
+        else { sel.dispatchEvent(new Event('change', {bubbles: true})); }
+    }
+    // Choisit le 1er mois non payé pour le motif courant ; si le mois
+    // sélectionné est déjà payé, on bascule automatiquement (anti-doublon).
+    function pickUnpaidMonth(payes) {
+        var mois = document.getElementById('id_mois');
+        var motif = document.getElementById('id_motif');
+        if (!mois) return;
+        var cur = motif ? motif.value : '';
+        function dejaPaye(v) {
+            return (payes[v] || []).some(function (p) { return !cur || p.motif === cur; });
+        }
+        var choisi = null;
+        for (var i = 0; i < mois.options.length; i++) {
+            var v = mois.options[i].value;
+            if (!v) continue;
+            if (!dejaPaye(v)) { choisi = v; break; }
+        }
+        var note = document.getElementById('mois-hint');
+        if (!note) {
+            note = document.createElement('p');
+            note.id = 'mois-hint';
+            note.className = 'text-xs mt-1 text-font-subtle-light';
+            if (mois.parentNode) mois.parentNode.appendChild(note);
+        }
+        if (choisi && dejaPaye(mois.value)) {
+            mois.value = choisi;
+            if (window.django && django.jQuery) { django.jQuery(mois).trigger('change'); }
+            note.textContent = 'Mois déjà payé : bascule automatique sur le mois suivant non payé (modifiable).';
+        } else if (choisi) {
+            note.textContent = '';
+        } else if (mois.options.length > 1) {
+            note.textContent = 'Tous les mois sont déjà payés pour ce motif.';
+        }
+    }
+    // Remplit le champ Montant (FCFA) depuis le tarif de la filière (+ niveau) de l'inscription.
+    // Force le remplissage à la sélection d'un étudiant ; sinon respecte une saisie manuelle.
+    function fillMontant(filiereId, niveauId, force) {
+        var montant = document.getElementById('id_montant');
+        if (!montant) return;
+        if (!force && montant.dataset.auto !== '1' && montant.value) return;
+        var q = 'niveau_id=' + encodeURIComponent(niveauId || '')
+            + '&filiere_id=' + encodeURIComponent(filiereId || '');
+        fetch('/admin/campus/paiementscolarite/montant-affiliation/?' + q)
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.montant && parseFloat(d.montant) > 0) {
+                    montant.value = d.montant;
+                    montant.dataset.auto = '1';
+                    showTarifHint(d.montant);
+                } else {
+                    showTarifHint(null);
+                }
+            });
+    }
+    function showTarifHint(montant) {
+        var hint = document.getElementById('tarif-hint');
+        if (!hint) {
+            var ref = document.getElementById('id_montant');
+            hint = document.createElement('p');
+            hint.id = 'tarif-hint';
+            hint.className = 'text-xs mt-1 text-font-subtle-light';
+            if (ref && ref.parentNode) ref.parentNode.appendChild(hint);
+            else return;
+        }
+        hint.textContent = montant
+            ? 'Montant récupéré du tarif de la filière : ' + montant + ' FCFA (modifiable).'
+            : 'Aucun tarif trouvé pour cette filière : saisis le montant manuellement.';
+    }
+})();
+</script>
+<script>
+(function () {
+    var niv = document.getElementById('id_niveau');
+    var fil = document.getElementById('id_filiere');
+    var montant = document.getElementById('id_montant');
+    if (!montant) return;
+    montant.dataset.auto = montant.value ? '0' : '1';
+    montant.addEventListener('input', function () { montant.dataset.auto = montant.value ? '0' : '1'; });
+    function refresh() {
+        if (montant.dataset.auto !== '1' && montant.value) return;
+        var q = 'niveau_id=' + encodeURIComponent(niv && niv.value ? niv.value : '')
+            + '&filiere_id=' + encodeURIComponent(fil && fil.value ? fil.value : '');
+        fetch('/admin/campus/paiementscolarite/montant-affiliation/?' + q)
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.montant && parseFloat(d.montant) > 0) {
+                    montant.value = d.montant;
+                    montant.dataset.auto = '1';
+                }
+            });
+    }
+    if (niv) niv.addEventListener('change', refresh);
+    if (fil) fil.addEventListener('change', refresh);
+})();
+</script>
+<script>
+(function () {
+    var annee = document.getElementById('id_annee_academique');
+    var mois = document.getElementById('id_mois');
+    if (!annee || !mois) return;
+    annee.addEventListener('change', function () {
+        var keep = mois.value;
+        fetch('/admin/campus/paiementscolarite/mois-annee/?annee_id=' + encodeURIComponent(annee.value || ''))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                mois.innerHTML = '';
+                var opt0 = document.createElement('option');
+                opt0.value = ''; opt0.textContent = '— Choisir le mois —';
+                mois.appendChild(opt0);
+                (d.mois || []).forEach(function (m) {
+                    var o = document.createElement('option');
+                    o.value = m.num; o.textContent = m.label;
+                    if (String(m.num) === String(keep)) o.selected = true;
+                    mois.appendChild(o);
+                });
+            });
+    });
+})();
+</script>
+{% endblock %}

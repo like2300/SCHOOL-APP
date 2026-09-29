@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fiche employé — {{ employe.last_name }} {{ employe.first_name }}</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a2332; margin: 0; padding: 24px; }
+  .page { max-width: 800px; margin: 0 auto; }
+  .header { text-align: center; border-bottom: 3px double #1a6b3c; padding-bottom: 12px; margin-bottom: 16px; }
+  .header h1 { color: #1a6b3c; margin: 0; font-size: 22px; }
+  .header p { margin: 2px 0; font-size: 12px; color: #555; }
+  h2 { background: #1a6b3c; color: #fff; font-size: 14px; padding: 6px 10px; margin: 16px 0 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td, th { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  td.label { font-weight: bold; color: #1a6b3c; width: 220px; background: #f6f9f6; }
+  .photo { float: right; width: 120px; height: 140px; object-fit: cover; border: 2px solid #1a6b3c; }
+  .sign { display: flex; justify-content: space-between; margin-top: 48px; font-size: 12px; color: #555; }
+  .no-print { text-align: center; margin-bottom: 16px; }
+  .no-print button { background: #1a6b3c; color: #fff; border: none; padding: 10px 24px; font-size: 14px; border-radius: 6px; cursor: pointer; }
+  @media print { .no-print { display: none; } body { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="no-print"><button onclick="window.print()">Imprimer la fiche</button></div>
+  <div class="header">
+    <h1>ÉCOLE SUPÉRIEURE DE TECHNOLOGIE, D'INGÉNIERIE ET DE MANAGEMENT</h1>
+    <p>FICHE EMPLOYÉ — {{ employe.get_type_personnel_display }}</p>
+  </div>
+  {% if employe.photo %}<img class="photo" src="{{ employe.photo.url }}">{% endif %}
+  <h2>I. IDENTITÉ</h2>
+  <table>
+    <tr><td class="label">Nom(s)</td><td>{{ employe.last_name }}</td></tr>
+    <tr><td class="label">Prénom(s)</td><td>{{ employe.first_name }}</td></tr>
+    <tr><td class="label">Sexe</td><td>{{ employe.get_sexe_display }}</td></tr>
+    <tr><td class="label">Téléphone</td><td>{{ employe.phone }}</td></tr>
+    <tr><td class="label">Email</td><td>{{ employe.email|default:"—" }}</td></tr>
+    <tr><td class="label">Adresse</td><td>{{ employe.adresse|default:"—" }}</td></tr>
+  </table>
+  <h2>II. POSTE &amp; AFFECTATION</h2>
+  <table>
+    <tr><td class="label">Fonction</td><td>{{ employe.fonction }}</td></tr>
+    <tr><td class="label">Établissement</td><td>{{ employe.etablissement|default:"—" }}</td></tr>
+    <tr><td class="label">Filière</td><td>{{ employe.filiere|default:"—" }}</td></tr>
+    <tr><td class="label">Date d'embauche</td><td>{{ employe.date_embauche|default:"—" }}</td></tr>
+    <tr><td class="label">Statut</td><td>{{ employe.get_statut_display }}</td></tr>
+    <tr><td class="label">Salaire de base</td><td>{{ employe.salaire_base }} FCFA</td></tr>
+  </table>
+  <h2>III. COURS ASSIGNÉS (emploi du temps)</h2>
+  <table>
+    <tr><th>Matière</th><th>Niveau</th><th>Filière</th><th>Jour</th><th>Heure</th><th>Salle</th></tr>
+    {% for c in cours %}
+    <tr><td>{{ c.matiere }}</td><td>{{ c.niveau }}</td><td>{{ c.filiere }}</td><td>{{ c.get_jours_display }}</td><td>{{ c.heure }}</td><td>{{ c.salle }}</td></tr>
+    {% empty %}
+    <tr><td colspan="6">Aucun cours assigné.</td></tr>
+    {% endfor %}
+  </table>
+  <h2>IV. DOCUMENTS ADMINISTRATIFS</h2>
+  <table>
+    <tr><td class="label">CV</td><td>{% if employe.cv %}Fourni{% else %}Manquant{% endif %}</td></tr>
+    <tr><td class="label">Diplôme</td><td>{% if employe.diplome %}Fourni{% else %}Manquant{% endif %}</td></tr>
+    <tr><td class="label">Contrat</td><td>{% if employe.contrat %}Fourni{% else %}Manquant{% endif %}</td></tr>
+    <tr><td class="label">Pièce d'identité</td><td>{% if employe.piece_identite %}Fournie{% else %}Manquante{% endif %}</td></tr>
+  </table>
+  <div class="sign">
+    <div>Signature de l'employé<br><br>___________________</div>
+    <div>Signature &amp; cachet de l'administration<br><br>___________________</div>
+  </div>
+</div>
+</body>
+</html>

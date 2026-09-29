@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ticket — {{ paiement.reference }}</title>
+<style>
+  :root { --primaire: {{ couleur|default:"#1a6b3c" }}; --accent: {{ accent|default:"#ca8a04" }}; }
+  body { font-family: 'Courier New', monospace; color: #111; margin: 0; padding: 24px; background: #eee; }
+  .ticket { max-width: 340px; margin: 0 auto; background: #fff; padding: 20px; border: 1px dashed #999; border-top: 6px solid var(--primaire); }
+  .ticket .logo { text-align: center; margin-bottom: 6px; }
+  .ticket .logo img { max-height: 60px; max-width: 100%; }
+  .ticket h1 { font-size: 16px; text-align: center; margin: 0 0 4px; color: var(--primaire); font-family: Arial, sans-serif; }
+  .ticket .sub { font-size: 11px; text-align: center; margin-bottom: 12px; }
+  .ticket table { width: 100%; font-size: 13px; border-collapse: collapse; }
+  .ticket td { padding: 3px 0; vertical-align: top; }
+  .ticket td.k { color: #555; width: 110px; }
+  .ticket .total { font-size: 18px; font-weight: bold; text-align: center; margin: 12px 0; border-top: 1px dashed #999; border-bottom: 1px dashed #999; padding: 8px 0; color: var(--primaire); }
+  .ticket .foot { font-size: 11px; text-align: center; margin-top: 12px; }
+  .no-print { text-align: center; margin-bottom: 16px; }
+  .no-print button { font-family: Arial; background: var(--primaire); color: #fff; border: none; padding: 10px 24px; font-size: 14px; border-radius: 6px; cursor: pointer; }
+  @media print { body { background: #fff; padding: 0; } .no-print { display: none; } .ticket { border: none; border-top: 6px solid var(--primaire); max-width: 100%; } }
+</style>
+</head>
+<body>
+<div class="no-print"><button onclick="window.print()">Imprimer le ticket</button></div>
+<div class="ticket">
+  {% if ecole and ecole.image %}<div class="logo"><img src="{{ ecole.image.url }}" alt="Logo"></div>{% endif %}
+  <h1>{{ ecole.nom|default:"ESTIM CAMPUS" }}</h1>
+  <div class="sub">Reçu de paiement<br>{{ paiement.reference }} — {{ paiement.created_at|date:"d/m/Y H:i" }}</div>
+  <table>
+    <tr><td class="k">Étudiant</td><td><strong>{{ paiement.nom_etudiant }}</strong></td></tr>
+    <tr><td class="k">Matricule</td><td>{{ paiement.matricule }}</td></tr>
+    <tr><td class="k">Motif</td><td>{{ paiement.get_motif_display }}</td></tr>
+    <tr><td class="k">Méthode</td><td>{{ paiement.get_methode_display }}</td></tr>
+    <tr><td class="k">Reçu par</td><td>{{ paiement.recu_par|default:"—" }}</td></tr>
+  </table>
+  <div class="total">{{ paiement.montant }} FCFA</div>
+  <div class="foot">Merci de votre paiement.<br>Présentez ce ticket en cas de réclamation.</div>
+</div>
+</body>
+</html>

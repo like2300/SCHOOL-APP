@@ -1,0 +1,11 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="fiche/" target="_blank" class="bg-primary-600 flex h-9 items-center justify-center rounded-default px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-all duration-200 gap-2">
+            <span class="material-symbols-outlined !text-lg">print</span>
+            <span>Imprimer la fiche de paie</span>
+        </a>
+    </li>
+{% endblock %}
