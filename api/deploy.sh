@@ -12,8 +12,8 @@ BRANCH="main"
 VENV="$APP_DIR/env"                    # venv AlwaysData (ou $HOME/virtualenv/...)
 PYTHON="$VENV/bin/python"
 PIP="$VENV/bin/pip"
-# Fichier touché pour recharger le site WSGI (mets ton vrai .wsgi si besoin) :
-RESTART_TOUCH="$APP_DIR/estim_campus_api/wsgi.py"
+# Fichier touché pour recharger le site WSGI AlwaysData (même que "Application path").
+RESTART_TOUCH="$APP_DIR/estim.wsgi"
 
 cd "$APP_DIR"
 echo "[deploy] Dossier : $APP_DIR"
