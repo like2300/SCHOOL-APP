@@ -2,7 +2,7 @@
 # ============================================================
 # DEPLOIEMENT ESTIM CAMPUS — AlwaysData (Python WSGI)
 # Usage :  ./deploy.sh            (manuel / SSH)
-#          appelé auto par le webhook GitHub -> /api/deploy/webhook/
+#          appelé auto par GitHub Actions (push) ou le webhook.
 # ============================================================
 set -e
 
