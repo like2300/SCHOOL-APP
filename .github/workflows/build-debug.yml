@@ -1,0 +1,47 @@
+name: CAMU - Build APK Debug
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK Debug
+    runs-on: ubuntu-latest
+
+    steps:
+      # Récupérer le code source
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Installer Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Installer Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Installer les dépendances
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Compiler l'APK Debug
+      - name: Build APK Debug
+        run: flutter build apk --debug
+
+      # Enregistrer l'APK comme artefact téléchargeable
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: camu-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
