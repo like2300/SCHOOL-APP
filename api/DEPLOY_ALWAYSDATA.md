@@ -24,9 +24,25 @@ cd ~/estim_campus/api        # dossier du projet sur AlwaysData
 python3 -m venv env
 ./env/bin/pip install -r dep.txt
 cp .env.example .env         # puis édite .env (SECRET, DB, DEPLOY_WEBHOOK_SECRET...)
-chmod +x deploy.sh
+chmod +x deploy.sh setup_ssh.sh
 ./deploy.sh                  # 1er déploiement complet
 ```
+
+## 1b. Clé SSH (pull sans mot de passe)
+
+```bash
+cd ~/estim_campus/api
+./setup_ssh.sh               # génère ~/.ssh/id_ed25519 + affiche la clé publique
+```
+
+Copie la clé affichée vers GitHub > **like2300/SCHOOL-APP > Settings > Deploy keys >
+Add deploy key** (lecture seule suffit), puis :
+
+```bash
+./setup_ssh.sh --switch-remote   # origin passe en git@github.com:... (SSH)
+```
+
+`deploy.sh` te préviendra tout seul si aucune clé SSH n'existe.
 
 `deploy.sh` fait : `git pull` → dépendances → `migrate` → `collectstatic` →
 `ensure_root` (crée **root / root** si inexistant) → `seed_shortcuts`
