@@ -64,5 +64,8 @@ echo "[deploy] Raccourcis (apps + sites)..."
 "$PYTHON" manage.py seed_shortcuts
 
 # --- 7. RECHARGEMENT DU SITE ---
+# Mode Python WSGI : le touch recharge tout seul.
+# Mode User program : redémarre le programme depuis le panel AlwaysData
+# (Sites > ton site > Restart) après ce script.
 touch "$RESTART_TOUCH"
-echo "[deploy] OK — site rechargé."
+echo "[deploy] OK — code à jour."

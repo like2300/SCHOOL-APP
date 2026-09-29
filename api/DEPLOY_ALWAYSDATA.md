@@ -1,5 +1,34 @@
 # Déploiement AlwaysData — ESTIM Campus (via GitHub Actions SSH)
 
+## Option A : site Python WSGI (rechargement auto)
+
+| Champ | Valeur |
+|---|---|
+| **Type** | Python WSGI |
+| **Application path** | `/home/school-open/estim_campus/api/estim.wsgi` |
+| **Working directory** | `/home/school-open/estim_campus/api` |
+| **Environment variables** | vide (tout est dans `api/.env`) |
+| **Python version** | 3.13 |
+| **virtualenv directory** | `/home/school-open/estim_campus/api/env` |
+| **Static paths** | `/static/=/home/school-open/estim_campus/api/staticfiles` et `/media/=/home/school-open/estim_campus/api/media` |
+
+Le `touch estim.wsgi` de `deploy.sh` recharge le site tout seul.
+
+## Option B : site User program (gunicorn — oui, c'est possible)
+
+| Champ | Valeur |
+|---|---|
+| **Type** | User program |
+| **Command** | `/home/school-open/estim_campus/api/start.sh` |
+| **Working directory** | `/home/school-open/estim_campus/api` |
+| **Environment variables** | vide (tout est dans `api/.env`) |
+| **Static paths** | idem option A |
+
+`start.sh` lance `gunicorn` sur le `$PORT` fourni par AlwaysData (2 workers,
+logs vers la sortie). Après chaque `./deploy.sh`, fais **Restart** du programme
+dans le panel (Sites > ton site > Restart) — le user program ne recharge pas
+tout seul au `touch`.
+
 ## 0. Cloner QUE l'API (pas tout le dépôt)
 
 Sur le serveur, on ne récupère que le dossier `api/` :
