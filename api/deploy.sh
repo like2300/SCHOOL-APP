@@ -28,10 +28,12 @@ echo "[deploy] MAJ dépendances..."
 "$PIP" install -q -r "$APP_DIR/dep.txt"
 
 # --- 2. CODE (git push -> pull auto) ---
-if [ -d "$APP_DIR/.git" ]; then
+# Le dépôt git est à la racine (sparse checkout : seul api/ est extrait).
+GIT_DIR="$(git -C "$APP_DIR" rev-parse --show-toplevel 2>/dev/null || echo "")"
+if [ -n "$GIT_DIR" ]; then
   echo "[deploy] git pull ($BRANCH)..."
-  git fetch origin
-  git reset --hard "origin/$BRANCH"
+  git -C "$GIT_DIR" fetch origin
+  git -C "$GIT_DIR" reset --hard "origin/$BRANCH"
 else
   echo "[deploy] Pas de dépôt git ici — étape ignorée."
 fi
@@ -50,11 +52,11 @@ echo "[deploy] Fichiers statiques..."
 
 # --- 5. SUPERUSER ROOT (si inexistant) ---
 echo "[deploy] Superuser root..."
-"$PYTHON" manage.py ensure_root --noinput
+"$PYTHON" manage.py ensure_root
 
 # --- 6. RACCOURCIS DE L'APP ---
 echo "[deploy] Raccourcis (apps + sites)..."
-"$PYTHON" manage.py seed_shortcuts --noinput
+"$PYTHON" manage.py seed_shortcuts
 
 # --- 7. RECHARGEMENT DU SITE ---
 touch "$RESTART_TOUCH"
