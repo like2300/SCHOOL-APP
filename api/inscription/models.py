@@ -5,6 +5,7 @@ from django.db import models
 class FormConfig(models.Model):
     title = models.CharField(max_length=200, default="ESTIM - Inscription en Ligne")
     school_name = models.CharField(max_length=255, default="ÉCOLE SUPÉRIEURE DE TECHNOLOGIE, D'INGÉNIERIE ET DE MANAGEMENT", verbose_name="Nom de l'école")
+    school_short_name = models.CharField(max_length=50, default="ESTIM", verbose_name="Nom court de l'école (labels du formulaire)")
     school_agreement = models.CharField(max_length=255, default="Agrément N° 0238 /MES-CAB-DGESUP", verbose_name="Agrément")
     school_address = models.TextField(default="91 rue Moulla, croisement av. de la Tsiemé — face Poste Réf / Rond-Point Koulounda — Brazzaville", verbose_name="Adresse")
     school_phone = models.CharField(max_length=100, default="+242 061167676", verbose_name="Téléphone")

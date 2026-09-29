@@ -287,7 +287,7 @@ class FormConfigAdmin(ModelAdmin):
     fieldsets = (
         ("Fiche d'inscription (en-tête PDF)", {
             "fields": ("title", "annee_academique", "is_active", "logo",
-                       "school_name", "school_agreement", "school_address",
+                       "school_name", "school_short_name", "school_agreement", "school_address",
                        "school_phone", "school_whatsapp", "school_website"),
         }),
         ("Formulaire web / visuels", {

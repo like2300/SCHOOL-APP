@@ -861,7 +861,7 @@
                 <div class="tab">
                     <div class="tab-title"><span class="bar"></span> Où souhaitez-vous vous inscrire ?</div>
                     <div class="input-group">
-                        <label class="field-label" for="target_etablissement">Établissement ESTIM <span class="required">*</span></label>
+                        <label class="field-label" for="target_etablissement">Établissement {{ config.school_short_name|default:"ESTIM" }} <span class="required">*</span></label>
                         <select id="target_etablissement" name="target_etablissement" class="field-select etab-select" required>
                             <option value="" disabled selected>Chargement des établissements...</option>
                         </select>
