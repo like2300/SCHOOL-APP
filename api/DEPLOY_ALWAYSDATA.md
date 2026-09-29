@@ -1,4 +1,4 @@
-# Déploiement AlwaysData — ESTIM Campus
+# Déploiement AlwaysData — ESTIM Campus (via GitHub Actions SSH)
 
 ## 0. Cloner QUE l'API (pas tout le dépôt)
 
