@@ -49,6 +49,27 @@ def _run_deploy():
         _log(f"ERREUR déploiement : {e}")
 
 
+def deploy_status(request):
+    """GET public : prouve quel commit tourne sur le serveur (test auto-deploy)."""
+    import subprocess
+
+    sha = ""
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=BASE_DIR, capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+    except Exception:  # noqa: BLE001
+        pass
+    tail = ""
+    try:
+        with open(LOG_FILE, encoding="utf-8") as f:
+            tail = "".join(f.readlines()[-15:])
+    except OSError:
+        tail = "(pas encore de déploiement webhook)"
+    return JsonResponse({"ok": True, "sha": sha, "deploy_log": tail})
+
+
 @csrf_exempt
 def deploy_webhook(request):
     if request.method != "POST":

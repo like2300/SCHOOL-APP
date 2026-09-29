@@ -4,11 +4,12 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.static import serve
 
-from campus.deploy_webhook import deploy_webhook
+from campus.deploy_webhook import deploy_status, deploy_webhook
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/deploy/webhook/", deploy_webhook, name="deploy-webhook"),
+    path("api/deploy/status/", deploy_status, name="deploy-status"),
     path("api/", include("campus.urls")),
     path("inscription/", include("inscription.urls")),
     # Fallback pour servir les médias en production si non configuré sur le serveur web
